@@ -1,0 +1,126 @@
+
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
+  if (!OPENROUTER_API_KEY) {
+    return new Response(
+      JSON.stringify({ error: "API key not found" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  try {
+    const { symptoms, image } = await req.json();
+
+    // Prepare messages array with text
+    const messages = [
+      {
+        role: "system",
+        content: "You are an AI medical assistant specialized in first aid guidance. Analyze the symptoms and determine if they are an emergency that requires immediate professional attention. For non-emergencies, suggest appropriate first aid guidance. Be concise and clear. Always prioritize safety."
+      },
+      {
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: `Analyze these symptoms: ${symptoms}`
+          }
+        ]
+      }
+    ];
+
+    // Add image to messages if provided
+    if (image) {
+      messages[1].content.push({
+        type: "image_url",
+        image_url: {
+          url: image
+        }
+      });
+    }
+
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+        "HTTP-Referer": "https://lovable.ai",
+        "X-Title": "First Aid AI Assistant",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-pro-exp-03-25:free",
+        messages: messages
+      })
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      console.error("OpenRouter API error:", data);
+      return new Response(
+        JSON.stringify({ error: "Error from AI service", details: data }),
+        { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Process the response
+    const aiResponse = data.choices[0].message.content;
+    
+    // Determine if it's an emergency from the AI response
+    const isEmergency = /emergency|immediate|urgent|call 911|hospital|ambulance|critical|severe|life-threatening/i.test(aiResponse);
+    
+    // Find the best matching guidance if not an emergency
+    let matchingGuidance = null;
+    if (!isEmergency) {
+      // Basic categorization to find relevant keywords
+      const symptomsLower = symptoms.toLowerCase();
+      const commonKeywords = {
+        "cut": "cuts",
+        "burn": "burns",
+        "sprain": "sprains",
+        "fracture": "fractures",
+        "insect": "insect-bites",
+        "sting": "insect-bites",
+        "bite": "bites",
+        "fever": "fever",
+        "headache": "headaches",
+        "bleeding": "bleeding",
+        "choking": "choking"
+      };
+      
+      for (const [keyword, category] of Object.entries(commonKeywords)) {
+        if (symptomsLower.includes(keyword)) {
+          matchingGuidance = category;
+          break;
+        }
+      }
+    }
+
+    return new Response(
+      JSON.stringify({ 
+        analysis: aiResponse,
+        isEmergency,
+        category: matchingGuidance
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (error) {
+    console.error("Error in analyze-symptoms function:", error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+});

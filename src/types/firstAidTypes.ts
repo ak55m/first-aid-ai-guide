@@ -8,4 +8,5 @@ export interface FirstAidGuidance {
   steps: string[];
   medications?: string[];
   note?: string;
+  aiAnalysis?: string; // Add AI analysis field
 }

@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { firstAidDatabase } from '@/data/firstAidData';
 import { toast } from 'sonner';
 import { FirstAidGuidance } from '@/types/firstAidTypes';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SymptomInputProps {
   onGuidanceFound: (guidance: FirstAidGuidance) => void;
@@ -19,7 +20,7 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
   const [symptoms, setSymptoms] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!symptoms.trim()) {
       toast.error("Please describe your symptoms first");
       return;
@@ -27,51 +28,75 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
 
     setIsLoading(true);
     
-    // Simulate API delay
-    setTimeout(() => {
-      const symptomsLower = symptoms.toLowerCase();
+    try {
+      // Call our Supabase Edge Function to analyze symptoms
+      const { data, error } = await supabase.functions.invoke('analyze-symptoms', {
+        body: { 
+          symptoms: symptoms
+        }
+      });
       
-      // Check for emergency keywords
-      const emergencyKeywords = [
-        'chest pain', 'heart attack', 'stroke', 'unconscious', 'breathing', 
-        'choking', 'drowning', 'seizure', 'severe bleeding', 'head injury', 'suicide'
-      ];
-      
-      const emergencyTrigger = emergencyKeywords.find(keyword => 
-        symptomsLower.includes(keyword)
-      );
-      
-      if (emergencyTrigger) {
-        onEmergencyDetected(
-          symptoms, 
-          `Your symptoms may indicate a serious medical emergency. Medical attention for "${emergencyTrigger}" should not be delayed.`
-        );
+      if (error) {
+        console.error("Error calling analyze-symptoms:", error);
+        toast.error("An error occurred while analyzing your symptoms");
         setIsLoading(false);
         return;
       }
       
-      // Search for matching first aid guidance
+      // Handle emergency case
+      if (data.isEmergency) {
+        onEmergencyDetected(
+          symptoms,
+          `AI analysis indicates this may be a medical emergency: ${data.analysis}`
+        );
+        setIsLoading(false);
+        return;
+      }
+
+      // Look for matching guidance either from AI suggestion or our database
       let foundGuidance = null;
       
-      // Look for keyword matches
-      for (const guide of firstAidDatabase) {
-        for (const keyword of guide.keywords) {
-          if (symptomsLower.includes(keyword.toLowerCase())) {
+      // If AI suggested a category, try to find it in our database
+      if (data.category) {
+        for (const guide of firstAidDatabase) {
+          if (guide.keywords.includes(data.category)) {
             foundGuidance = guide;
             break;
           }
         }
-        if (foundGuidance) break;
+      }
+      
+      // If no guidance found from AI category, fall back to keyword search
+      if (!foundGuidance) {
+        const symptomsLower = symptoms.toLowerCase();
+        
+        for (const guide of firstAidDatabase) {
+          for (const keyword of guide.keywords) {
+            if (symptomsLower.includes(keyword.toLowerCase())) {
+              foundGuidance = guide;
+              break;
+            }
+          }
+          if (foundGuidance) break;
+        }
       }
       
       if (foundGuidance) {
-        onGuidanceFound(foundGuidance);
+        // Add AI analysis to the guidance
+        const enhancedGuidance = {
+          ...foundGuidance,
+          aiAnalysis: data.analysis
+        };
+        onGuidanceFound(enhancedGuidance);
       } else {
         toast.error("I couldn't find specific guidance for these symptoms. Please try describing them differently or seek professional medical advice.");
       }
-      
+    } catch (error) {
+      console.error("Error in symptom analysis:", error);
+      toast.error("An error occurred while processing your symptoms");
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const commonConditions = [
