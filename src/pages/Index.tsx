@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { FirstAidGuidance } from '@/data/firstAidData';
+import { FirstAidGuidance } from '@/types/firstAidTypes';
 import Header from '@/components/Header';
 import SymptomInput from '@/components/SymptomInput';
 import FirstAidGuide from '@/components/FirstAidGuide';

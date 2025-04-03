@@ -3,6 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { AlertCircle, ArrowLeft, Award, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { FirstAidGuidance } from '@/types/firstAidTypes';
 
 interface FirstAidGuideProps {
   guidance: FirstAidGuidance;
