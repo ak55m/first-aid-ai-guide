@@ -15,6 +15,7 @@ serve(async (req) => {
 
   const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
   if (!OPENROUTER_API_KEY) {
+    console.error("OPENROUTER_API_KEY not found in environment variables");
     return new Response(
       JSON.stringify({ error: "API key not found" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -22,7 +23,20 @@ serve(async (req) => {
   }
 
   try {
-    const { symptoms, image } = await req.json();
+    console.log("Request received in analyze-symptoms function");
+    
+    // Parse the request body
+    const requestData = await req.json();
+    console.log("Request data:", JSON.stringify(requestData));
+    
+    const { symptoms, image } = requestData;
+    
+    if (!symptoms || symptoms.trim() === '') {
+      return new Response(
+        JSON.stringify({ error: "No symptoms provided" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Prepare messages array with text
     const messages = [
@@ -51,6 +65,9 @@ serve(async (req) => {
       });
     }
 
+    console.log("Calling OpenRouter API...");
+    console.log("Messages:", JSON.stringify(messages));
+    
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -66,6 +83,7 @@ serve(async (req) => {
     });
 
     const data = await response.json();
+    console.log("OpenRouter API response:", JSON.stringify(data));
     
     if (!response.ok) {
       console.error("OpenRouter API error:", data);
@@ -108,6 +126,8 @@ serve(async (req) => {
       }
     }
 
+    console.log("Analysis complete. Emergency:", isEmergency, "Category:", matchingGuidance);
+    
     return new Response(
       JSON.stringify({ 
         analysis: aiResponse,

@@ -29,16 +29,35 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
     setIsLoading(true);
     
     try {
+      console.log("Calling analyze-symptoms with:", symptoms);
+      
       // Call our Supabase Edge Function to analyze symptoms
       const { data, error } = await supabase.functions.invoke('analyze-symptoms', {
         body: { 
-          symptoms: symptoms
+          symptoms: symptoms.trim()
         }
       });
       
+      console.log("Edge function response:", data);
+      console.log("Edge function error:", error);
+      
       if (error) {
         console.error("Error calling analyze-symptoms:", error);
-        toast.error("An error occurred while analyzing your symptoms");
+        toast.error(`Error analyzing symptoms: ${error.message || "Unknown error"}`);
+        setIsLoading(false);
+        return;
+      }
+      
+      if (!data) {
+        console.error("No data returned from analyze-symptoms");
+        toast.error("No response received from AI service");
+        setIsLoading(false);
+        return;
+      }
+      
+      if (data.error) {
+        console.error("API error:", data.error);
+        toast.error(`AI service error: ${data.error}`);
         setIsLoading(false);
         return;
       }
@@ -93,7 +112,7 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
       }
     } catch (error) {
       console.error("Error in symptom analysis:", error);
-      toast.error("An error occurred while processing your symptoms");
+      toast.error(`An error occurred: ${error.message || "Unknown error"}`);
     } finally {
       setIsLoading(false);
     }
