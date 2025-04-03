@@ -64,11 +64,14 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
         return;
       }
       
+      // Format the AI analysis to have better structure if it's a block of text
+      let formattedAnalysis = data.analysis;
+      
       // Handle emergency case
       if (data.isEmergency) {
         onEmergencyDetected(
           symptoms,
-          `AI analysis indicates this may be a medical emergency: ${data.analysis}`
+          formattedAnalysis
         );
         setIsLoading(false);
         return;
@@ -106,7 +109,7 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
         // Add AI analysis to the guidance
         const enhancedGuidance = {
           ...foundGuidance,
-          aiAnalysis: data.analysis
+          aiAnalysis: formattedAnalysis
         };
         onGuidanceFound(enhancedGuidance);
       } else {

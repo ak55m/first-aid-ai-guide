@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { AlertCircle, ArrowLeft, Award, CheckCircle } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Award, CheckCircle, Clock, Bandage, Syringe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { FirstAidGuidance } from '@/types/firstAidTypes';
 
@@ -23,22 +23,49 @@ const FirstAidGuide: React.FC<FirstAidGuideProps> = ({ guidance, onBack }) => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {guidance.aiAnalysis && (
+          <div className="rounded-lg border p-4 bg-muted/30">
+            <h3 className="text-lg font-medium flex items-center gap-2 mb-3">
+              <Bandage className="h-5 w-5 text-primary" />
+              AI Assessment
+            </h3>
+            <div className="prose prose-sm max-w-none">
+              {guidance.aiAnalysis.split('\n\n').map((paragraph, i) => (
+                <p key={i} className="mb-2">
+                  {paragraph.split('\n').map((line, j) => (
+                    <React.Fragment key={j}>
+                      {line}
+                      {j < paragraph.split('\n').length - 1 && <br />}
+                    </React.Fragment>
+                  ))}
+                </p>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div>
           <h3 className="text-lg font-medium flex items-center gap-2">
             <AlertCircle className="h-5 w-5 text-warning" />
             Do's and Don'ts
           </h3>
           <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <h4 className="font-medium text-success">Do</h4>
+            <div className="space-y-2 p-3 rounded-lg border border-success/20 bg-success/5">
+              <h4 className="font-medium text-success flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" />
+                Do
+              </h4>
               <ul className="list-disc pl-5 space-y-1">
                 {guidance.dos.map((item, index) => (
                   <li key={`do-${index}`}>{item}</li>
                 ))}
               </ul>
             </div>
-            <div className="space-y-2">
-              <h4 className="font-medium text-emergency">Don't</h4>
+            <div className="space-y-2 p-3 rounded-lg border border-emergency/20 bg-emergency/5">
+              <h4 className="font-medium text-emergency flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                Don't
+              </h4>
               <ul className="list-disc pl-5 space-y-1">
                 {guidance.donts.map((item, index) => (
                   <li key={`dont-${index}`}>{item}</li>
@@ -48,23 +75,29 @@ const FirstAidGuide: React.FC<FirstAidGuideProps> = ({ guidance, onBack }) => {
           </div>
         </div>
 
-        <div>
-          <h3 className="text-lg font-medium flex items-center gap-2">
+        <div className="p-4 rounded-lg border">
+          <h3 className="text-lg font-medium flex items-center gap-2 mb-3">
             <CheckCircle className="h-5 w-5 text-success" />
             Step-by-Step Instructions
           </h3>
-          <ol className="mt-2 list-decimal pl-5 space-y-3">
+          <ol className="mt-2 space-y-3">
             {guidance.steps.map((step, index) => (
-              <li key={`step-${index}`} className="pl-2">
+              <li key={`step-${index}`} className="flex gap-3 items-start">
+                <span className="flex-shrink-0 flex items-center justify-center rounded-full bg-primary/10 text-primary w-6 h-6 text-sm font-medium">
+                  {index + 1}
+                </span>
                 <p>{step}</p>
               </li>
             ))}
           </ol>
         </div>
 
-        {guidance.medications && (
-          <div className="p-4 bg-muted rounded-lg">
-            <h3 className="text-lg font-medium mb-2">Helpful Medications</h3>
+        {guidance.medications && guidance.medications.length > 0 && (
+          <div className="p-4 bg-muted/30 rounded-lg border">
+            <h3 className="text-lg font-medium flex items-center gap-2 mb-2">
+              <Syringe className="h-5 w-5 text-primary" />
+              Helpful Medications
+            </h3>
             <ul className="list-disc pl-5 space-y-1">
               {guidance.medications.map((med, index) => (
                 <li key={`med-${index}`}>{med}</li>
@@ -77,8 +110,12 @@ const FirstAidGuide: React.FC<FirstAidGuideProps> = ({ guidance, onBack }) => {
         )}
 
         {guidance.note && (
-          <div className="p-4 border border-muted rounded-lg">
-            <p className="text-sm italic">{guidance.note}</p>
+          <div className="p-4 rounded-lg border bg-warning/10 border-warning/20">
+            <div className="flex gap-2 items-center mb-1">
+              <Clock className="h-5 w-5 text-warning" />
+              <h4 className="font-medium">Important Note</h4>
+            </div>
+            <p className="text-sm">{guidance.note}</p>
           </div>
         )}
       </CardContent>
