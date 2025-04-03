@@ -66,7 +66,13 @@ serve(async (req) => {
     }
 
     console.log("Calling OpenRouter API...");
-    console.log("Messages:", JSON.stringify(messages));
+    
+    const openRouterBody = {
+      model: "google/gemini-2.5-pro-exp-03-25:free",
+      messages: messages
+    };
+    
+    console.log("Request payload:", JSON.stringify(openRouterBody));
     
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
@@ -76,20 +82,37 @@ serve(async (req) => {
         "X-Title": "First Aid AI Assistant",
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-pro-exp-03-25:free",
-        messages: messages
-      })
+      body: JSON.stringify(openRouterBody)
     });
 
-    const data = await response.json();
-    console.log("OpenRouter API response:", JSON.stringify(data));
+    const responseText = await response.text();
+    console.log("Raw OpenRouter response:", responseText);
+    
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      console.error("Error parsing JSON response:", e);
+      return new Response(
+        JSON.stringify({ error: "Invalid JSON response from AI service", rawResponse: responseText }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     
     if (!response.ok) {
       console.error("OpenRouter API error:", data);
       return new Response(
         JSON.stringify({ error: "Error from AI service", details: data }),
         { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate response format
+    if (!data.choices || !data.choices[0] || !data.choices[0].message || !data.choices[0].message.content) {
+      console.error("Unexpected response format:", data);
+      return new Response(
+        JSON.stringify({ error: "Unexpected response format from AI service", details: data }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 

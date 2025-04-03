@@ -19,6 +19,7 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
 }) => {
   const [symptoms, setSymptoms] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [image, setImage] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     if (!symptoms.trim()) {
@@ -34,7 +35,8 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
       // Call our Supabase Edge Function to analyze symptoms
       const { data, error } = await supabase.functions.invoke('analyze-symptoms', {
         body: { 
-          symptoms: symptoms.trim()
+          symptoms: symptoms.trim(),
+          image: image
         }
       });
       
