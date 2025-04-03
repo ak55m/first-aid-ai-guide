@@ -15,6 +15,43 @@ const EmergencyAlert: React.FC<EmergencyAlertProps> = ({
   reason, 
   onBack 
 }) => {
+  // Function to format AI text by replacing markdown-style elements
+  const formatAIText = (text: string | undefined) => {
+    if (!text) return null;
+    
+    // Replace markdown-style bold formatting (**text**) with span elements
+    const formattedText = text.replace(/\*\*(.*?)\*\*/g, '<span class="font-bold">$1</span>');
+    
+    // Split by paragraphs (double newlines)
+    const paragraphs = formattedText.split('\n\n');
+    
+    return (
+      <div className="prose prose-sm max-w-none">
+        {paragraphs.map((paragraph, i) => {
+          // Check if this is a list item paragraph
+          if (paragraph.trim().startsWith('*') || paragraph.trim().startsWith('-')) {
+            // Split by line breaks to process each list item
+            const listItems = paragraph.split('\n').map(item => item.trim());
+            return (
+              <ul key={i} className="list-disc pl-5 space-y-1 my-3">
+                {listItems.map((item, j) => (
+                  <li key={j} dangerouslySetInnerHTML={{ 
+                    __html: item.replace(/^\*\s?|-\s?/, '') // Remove the * or - prefix
+                  }} />
+                ))}
+              </ul>
+            );
+          } else {
+            // Regular paragraph
+            return (
+              <p key={i} className="mb-3" dangerouslySetInnerHTML={{ __html: paragraph }} />
+            );
+          }
+        })}
+      </div>
+    );
+  };
+
   return (
     <Card className="border-emergency">
       <CardHeader className="bg-emergency text-emergency-foreground">
@@ -30,8 +67,8 @@ const EmergencyAlert: React.FC<EmergencyAlertProps> = ({
         </div>
         
         <div>
-          <h3 className="text-lg font-medium mb-2">Why This Is Serious:</h3>
-          <p>{reason}</p>
+          <h3 className="text-lg font-medium mb-2">First Aid Guides:</h3>
+          {formatAIText(reason)}
         </div>
         
         <div className="space-y-4">

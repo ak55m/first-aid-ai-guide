@@ -11,6 +11,43 @@ interface FirstAidGuideProps {
 }
 
 const FirstAidGuide: React.FC<FirstAidGuideProps> = ({ guidance, onBack }) => {
+  // Function to format AI analysis text by replacing markdown-style elements
+  const formatAIText = (text: string | undefined) => {
+    if (!text) return null;
+    
+    // Replace markdown-style bold formatting (**text**) with span elements
+    const formattedText = text.replace(/\*\*(.*?)\*\*/g, '<span class="font-bold">$1</span>');
+    
+    // Split by paragraphs (double newlines)
+    const paragraphs = formattedText.split('\n\n');
+    
+    return (
+      <div className="prose prose-sm max-w-none">
+        {paragraphs.map((paragraph, i) => {
+          // Check if this is a list item paragraph
+          if (paragraph.trim().startsWith('*') || paragraph.trim().startsWith('-')) {
+            // Split by line breaks to process each list item
+            const listItems = paragraph.split('\n').map(item => item.trim());
+            return (
+              <ul key={i} className="list-disc pl-5 space-y-1 my-3">
+                {listItems.map((item, j) => (
+                  <li key={j} dangerouslySetInnerHTML={{ 
+                    __html: item.replace(/^\*\s?|-\s?/, '') // Remove the * or - prefix
+                  }} />
+                ))}
+              </ul>
+            );
+          } else {
+            // Regular paragraph
+            return (
+              <p key={i} className="mb-3" dangerouslySetInnerHTML={{ __html: paragraph }} />
+            );
+          }
+        })}
+      </div>
+    );
+  };
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -27,20 +64,9 @@ const FirstAidGuide: React.FC<FirstAidGuideProps> = ({ guidance, onBack }) => {
           <div className="rounded-lg border p-4 bg-muted/30">
             <h3 className="text-lg font-medium flex items-center gap-2 mb-3">
               <Bandage className="h-5 w-5 text-primary" />
-              AI Assessment
+              First Aid Guides
             </h3>
-            <div className="prose prose-sm max-w-none">
-              {guidance.aiAnalysis.split('\n\n').map((paragraph, i) => (
-                <p key={i} className="mb-2">
-                  {paragraph.split('\n').map((line, j) => (
-                    <React.Fragment key={j}>
-                      {line}
-                      {j < paragraph.split('\n').length - 1 && <br />}
-                    </React.Fragment>
-                  ))}
-                </p>
-              ))}
-            </div>
+            {formatAIText(guidance.aiAnalysis)}
           </div>
         )}
 
