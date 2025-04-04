@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { firstAidDatabase } from '@/data/firstAidData';
@@ -127,8 +128,21 @@ export function useSymptomAnalysis({
     // Format the AI analysis to have better structure if it's a block of text
     let formattedAnalysis = data.analysis;
     
-    // Handle emergency case
-    if (data.isEmergency) {
+    // Fix: Don't rely solely on AI's isEmergency flag, do our own check for common emergency keywords
+    // This ensures more accurate emergency detection
+    const emergencyKeywords = [
+      "call 911", "emergency", "ambulance", "immediate", "hospital", "urgent care", 
+      "severe", "critical", "life-threatening"
+    ];
+    
+    // Check if the text truly indicates an emergency situation by looking for emergency keywords
+    const containsEmergencyKeywords = emergencyKeywords.some(keyword => 
+      formattedAnalysis.toLowerCase().includes(keyword.toLowerCase())
+    );
+    
+    // Only treat as emergency if AI flagged it AND we find emergency keywords
+    // This prevents non-emergency headaches from triggering the emergency screen
+    if (data.isEmergency && containsEmergencyKeywords) {
       console.log("Emergency detected, showing emergency screen");
       onEmergencyDetected(
         symptoms,
