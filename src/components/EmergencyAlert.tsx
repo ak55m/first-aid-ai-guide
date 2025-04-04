@@ -54,20 +54,50 @@ const EmergencyAlert: React.FC<EmergencyAlertProps> = ({
               </ol>
             );
           }
-          // Check if this is a bullet list item paragraph (with either • or - as bullet markers)
-          else if (paragraph.includes('• ') || paragraph.includes('- ')) {
-            // Split by line breaks to process each list item
-            const listItems = paragraph.split('\n')
-              .filter(item => item.trim().length > 0)
-              .map(item => item.trim());
-              
-            console.log("Emergency Alert - Found bullet list:", listItems);
-              
+          // Check if paragraph contains hyphen list items
+          else if (paragraph.includes('\n-')) {
+            // Split by line breaks and process each item
+            const items = paragraph.split('\n')
+              .filter(item => item.trim().length > 0);
+            
+            // Check if the paragraph is a mix of text and list items or just list items
+            if (items[0].startsWith('-')) {
+              // All items are list items
+              return (
+                <ul key={i} className="list-disc pl-5 space-y-2 my-3">
+                  {items.map((item, j) => {
+                    // Clean the hyphen
+                    const cleanedItem = item.replace(/^-\s*/, '');
+                    return <li key={j} dangerouslySetInnerHTML={{ __html: cleanedItem }} />;
+                  })}
+                </ul>
+              );
+            } else {
+              // Mix of text and list items
+              // First item is descriptive text, rest are list items
+              return (
+                <div key={i} className="my-3">
+                  <p dangerouslySetInnerHTML={{ __html: items[0] }} className="mb-2" />
+                  <ul className="list-disc pl-5 space-y-1">
+                    {items.slice(1).map((item, j) => {
+                      const cleanedItem = item.replace(/^-\s*/, '');
+                      return <li key={j} dangerouslySetInnerHTML={{ __html: cleanedItem }} />;
+                    })}
+                  </ul>
+                </div>
+              );
+            }
+          }
+          // Handle standalone hyphen items that don't include newlines
+          else if (paragraph.trim().startsWith('-')) {
+            // Individual hyphen items without newlines
+            const items = paragraph.split('\n')
+              .filter(item => item.trim().length > 0);
+            
             return (
               <ul key={i} className="list-disc pl-5 space-y-2 my-3">
-                {listItems.map((item, j) => {
-                  // Clean both bullet formats (• and -)
-                  const cleanedItem = item.replace(/^[•-]\s*/, '');
+                {items.map((item, j) => {
+                  const cleanedItem = item.replace(/^-\s*/, '');
                   return <li key={j} dangerouslySetInnerHTML={{ __html: cleanedItem }} />;
                 })}
               </ul>
