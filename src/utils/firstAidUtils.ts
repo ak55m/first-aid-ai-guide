@@ -13,6 +13,13 @@ export function findMatchingGuidance(
   console.log("Finding guidance for symptoms:", symptoms, "category:", category);
   
   let foundGuidance = null;
+  const symptomsLower = symptoms.toLowerCase();
+  
+  // Remove the query prefix to get cleaner matching
+  const cleanSymptoms = symptomsLower
+    .replace("what are first aid guidelines for:", "")
+    .replace("what are first aid guidelines for", "")
+    .trim();
   
   // If AI suggested a category, try to find it in our database
   if (category) {
@@ -28,18 +35,24 @@ export function findMatchingGuidance(
   
   // If no guidance found from AI category, fall back to keyword search
   if (!foundGuidance) {
-    const symptomsLower = symptoms.toLowerCase();
-    console.log("No guidance found by category, searching by keywords in:", symptomsLower);
+    console.log("No guidance found by category, searching by keywords in:", cleanSymptoms);
     
+    // Try to find direct keyword matches
     for (const guide of firstAidDatabase) {
       for (const keyword of guide.keywords) {
-        if (symptomsLower.includes(keyword.toLowerCase())) {
+        if (cleanSymptoms.includes(keyword.toLowerCase())) {
           foundGuidance = guide;
           console.log("Found guidance by keyword:", keyword, "->", guide.title);
           break;
         }
       }
       if (foundGuidance) break;
+    }
+    
+    // If cleanSymptoms contains "headache", explicitly use the headache guide
+    if (!foundGuidance && cleanSymptoms.includes("headache")) {
+      foundGuidance = firstAidDatabase.find(guide => guide.id === "headache");
+      console.log("Found headache guidance by direct ID match");
     }
     
     // If still no match, use a fallback (first aid kit guidance)

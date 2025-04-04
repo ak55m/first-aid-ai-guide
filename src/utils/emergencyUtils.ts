@@ -10,8 +10,9 @@ export function containsEmergencyKeywords(text: string): boolean {
     "severe", "critical", "life-threatening"
   ];
   
+  const textLower = text.toLowerCase();
   return emergencyKeywords.some(keyword => 
-    text.toLowerCase().includes(keyword.toLowerCase())
+    textLower.includes(keyword.toLowerCase())
   );
 }
 
@@ -22,7 +23,13 @@ export function isEmergencyCondition(
   isAIFlaggedEmergency: boolean,
   analysisText: string
 ): boolean {
-  // Check if the AI flagged it as an emergency AND we can find emergency keywords
-  // This prevents false positives
+  // For headaches specifically, only flag as emergency if it contains specific emergency keywords
+  if (analysisText.toLowerCase().includes('headache')) {
+    return containsEmergencyKeywords(analysisText) && 
+           analysisText.toLowerCase().includes("seek medical attention") &&
+           isAIFlaggedEmergency;
+  }
+  
+  // For other conditions, check if AI flagged it AND we find emergency keywords
   return isAIFlaggedEmergency && containsEmergencyKeywords(analysisText);
 }

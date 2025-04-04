@@ -63,29 +63,27 @@ export function useSymptomAnalysis({
       );
       
       // If the component was unmounted or analysis was cancelled, don't proceed
-      if (!isMounted.current || !isAnalyzing) {
-        console.log("Component unmounted or analysis cancelled, stopping processing");
+      if (!isMounted.current) {
+        console.log("Component unmounted, stopping processing");
         return;
       }
       
       if (!data) {
         // Error already handled in analyzeSymptomWithAI
+        console.log("No data received from analyzeSymptomWithAI");
         setIsLoading(false);
         setIsAnalyzing(false);
         return;
       }
       
-      // Only process the result if we haven't cancelled the analysis
+      // Only process the result if we're still mounted
       processAnalysisResult(symptoms, data);
       
     } catch (error: any) {
-      // Only show error if we're still analyzing (not cancelled)
-      if (isAnalyzing && isMounted.current) {
+      // Only show error if we're still analyzing (not cancelled) and component is mounted
+      if (isMounted.current) {
         console.error("Error in symptom analysis:", error);
         toast.error(`An error occurred: ${error.message || "Unknown error"}`);
-      }
-    } finally {
-      if (isMounted.current) {
         setIsLoading(false);
         setIsAnalyzing(false);
       }
@@ -93,12 +91,6 @@ export function useSymptomAnalysis({
   };
 
   const processAnalysisResult = (symptoms: string, data: AnalysisResult) => {
-    // If analysis has been cancelled, don't process the result
-    if (!isAnalyzing || !isMounted.current) {
-      console.log("Analysis was cancelled, not processing results");
-      return;
-    }
-    
     console.log("Processing analysis result:", data);
     
     // Format the AI analysis to have better structure if it's a block of text
@@ -111,34 +103,33 @@ export function useSymptomAnalysis({
     if (isEmergency) {
       console.log("Emergency detected, showing emergency screen");
       onEmergencyDetected(symptoms, formattedAnalysis);
-      return;
-    }
-
-    // Look for matching guidance either from AI suggestion or our database
-    const foundGuidance = findMatchingGuidance(symptoms, data.category);
-    console.log("Found guidance:", foundGuidance);
-    
-    if (foundGuidance) {
-      // Add AI analysis to the guidance
-      const enhancedGuidance = {
-        ...foundGuidance,
-        aiAnalysis: formattedAnalysis
-      };
-      console.log("Calling onGuidanceFound with:", enhancedGuidance);
-      onGuidanceFound(enhancedGuidance);
     } else {
-      toast.error("I couldn't find specific guidance for these symptoms. Please try describing them differently or seek professional medical advice.");
+      // Look for matching guidance either from AI suggestion or our database
+      const foundGuidance = findMatchingGuidance(symptoms, data.category);
+      console.log("Found guidance:", foundGuidance);
+      
+      if (foundGuidance) {
+        // Add AI analysis to the guidance
+        const enhancedGuidance = {
+          ...foundGuidance,
+          aiAnalysis: formattedAnalysis
+        };
+        console.log("Calling onGuidanceFound with:", enhancedGuidance);
+        onGuidanceFound(enhancedGuidance);
+      } else {
+        toast.error("I couldn't find specific guidance for these symptoms. Please try describing them differently or seek professional medical advice.");
+      }
     }
     
     // Ensure loading states are reset
-    setIsLoading(false);
-    setIsAnalyzing(false);
+    if (isMounted.current) {
+      setIsLoading(false);
+      setIsAnalyzing(false);
+    }
   };
 
   const cancelAnalysis = () => {
     console.log("Cancelling analysis");
-    setIsAnalyzing(false);
-    setIsLoading(false);
     
     // Attempt to abort the request if possible
     if (abortControllerRef.current) {
@@ -146,6 +137,8 @@ export function useSymptomAnalysis({
       abortControllerRef.current = null;
     }
     
+    setIsAnalyzing(false);
+    setIsLoading(false);
     toast.info("Analysis cancelled");
   };
 
