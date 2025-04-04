@@ -41,7 +41,10 @@ export function useSymptomAnalysis({
       return;
     }
 
-    // Cancel any in-progress requests
+    // Reset state and cancel any in-progress requests before starting a new one
+    setIsLoading(true);
+    setIsAnalyzing(true);
+    
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
@@ -49,9 +52,6 @@ export function useSymptomAnalysis({
     
     // Create new abort controller for this request
     abortControllerRef.current = new AbortController();
-    
-    setIsLoading(true);
-    setIsAnalyzing(true);
     
     try {
       // Enhance user query with first aid context
@@ -96,8 +96,7 @@ export function useSymptomAnalysis({
       }
       
       // Only process the result if we haven't cancelled the analysis
-      if (isAnalyzing && isMounted.current) {
-        // At this point, we have a successful response and we're still mounted and analyzing
+      if (isMounted.current && isAnalyzing) {
         processAnalysisResult(symptoms, data as AnalysisResult);
       } else {
         console.log("Analysis was cancelled before processing results");
@@ -113,7 +112,7 @@ export function useSymptomAnalysis({
     } finally {
       if (isMounted.current) {
         setIsLoading(false);
-        setIsAnalyzing(false); // Important: Reset analyzing state when done
+        setIsAnalyzing(false);
       }
     }
   };
