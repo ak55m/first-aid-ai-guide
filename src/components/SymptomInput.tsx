@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { X } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
 import { FirstAidGuidance } from '@/types/firstAidTypes';
 import { useSymptomAnalysis } from '@/hooks/useSymptomAnalysis';
 import QuickSelectConditions from '@/components/QuickSelectConditions';
@@ -36,6 +37,7 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
 
   const handleSubmit = () => {
     if (symptoms.trim() && isSubmitEnabled) {
+      console.log("Submit button clicked, analyzing symptoms:", symptoms);
       analyzeSymptoms(symptoms, image);
     }
   };
@@ -44,6 +46,7 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
     setSymptoms(condition);
     setTimeout(() => {
       if (isSubmitEnabled) {
+        console.log("Quick select triggered analysis for:", condition);
         analyzeSymptoms(condition, image);
       }
     }, 300);
@@ -82,6 +85,7 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
               className="flex-1" 
               disabled={true}
             >
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Analyzing...
             </Button>
             <Button 
@@ -90,7 +94,7 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
               className="flex items-center"
             >
               <X className="mr-2 h-4 w-4" />
-              Cancel Analysis
+              Cancel
             </Button>
           </>
         ) : (

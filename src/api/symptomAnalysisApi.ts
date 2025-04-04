@@ -17,7 +17,7 @@ export async function analyzeSymptomWithAI(
   signal?: AbortSignal
 ): Promise<AnalysisResult | null> {
   try {
-    console.log("Calling analyze-symptoms with enhanced query:", symptoms);
+    console.log("Calling analyze-symptoms with symptoms:", symptoms);
     
     // Call our Supabase Edge Function to analyze symptoms
     const { data, error } = await supabase.functions.invoke('analyze-symptoms', {

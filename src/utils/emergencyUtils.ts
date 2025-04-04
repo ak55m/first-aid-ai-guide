@@ -22,7 +22,7 @@ export function isEmergencyCondition(
   isAIFlaggedEmergency: boolean,
   analysisText: string
 ): boolean {
-  // Only treat as emergency if AI flagged it AND we find emergency keywords
-  // This prevents non-emergency conditions from triggering the emergency screen
+  // Check if the AI flagged it as an emergency AND we can find emergency keywords
+  // This prevents false positives
   return isAIFlaggedEmergency && containsEmergencyKeywords(analysisText);
 }
