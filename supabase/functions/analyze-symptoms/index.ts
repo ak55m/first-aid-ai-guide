@@ -46,10 +46,9 @@ serve(async (req) => {
 
 Format your response following these strict rules:
 1. DO NOT begin with "First Aid Guidelines:" or "What are first aid guidelines for" - start directly with your analysis
-2. For step-by-step instructions, use simple text with numbered steps 
-3. For symptoms, considerations, or item lists, put each item on a new line with a hyphen (-)
-4. Don't use markdown formatting like **text** or bullet points
-5. Separate paragraphs with blank lines
+2. For symptoms, considerations, or item lists, put each item on a new line with a hyphen (-)
+3. Don't use markdown formatting like **text** or bullet points
+4. Separate paragraphs with blank lines
 
 Always prioritize safety and be concise but thorough.`
       },
