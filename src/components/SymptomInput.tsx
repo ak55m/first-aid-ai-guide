@@ -7,6 +7,7 @@ import { firstAidDatabase } from '@/data/firstAidData';
 import { toast } from 'sonner';
 import { FirstAidGuidance } from '@/types/firstAidTypes';
 import { supabase } from '@/integrations/supabase/client';
+import { X } from 'lucide-react';
 
 interface SymptomInputProps {
   onGuidanceFound: (guidance: FirstAidGuidance) => void;
@@ -20,6 +21,8 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
   const [symptoms, setSymptoms] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [image, setImage] = useState<string | null>(null);
+  // Add a controller for aborting fetch requests
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
 
   const handleSubmit = async () => {
     if (!symptoms.trim()) {
@@ -30,6 +33,10 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
     setIsLoading(true);
     
     try {
+      // Create a new AbortController for this request
+      const controller = new AbortController();
+      setAbortController(controller);
+      
       // Enhance user query with first aid context
       const enhancedQuery = `What are first aid guidelines for: ${symptoms.trim()}`;
       console.log("Calling analyze-symptoms with enhanced query:", enhancedQuery);
@@ -39,8 +46,12 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
         body: { 
           symptoms: enhancedQuery,
           image: image
-        }
+        },
+        signal: controller.signal
       });
+      
+      // Clear the controller when done
+      setAbortController(null);
       
       console.log("Edge function response:", data);
       console.log("Edge function error:", error);
@@ -118,10 +129,27 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
         toast.error("I couldn't find specific guidance for these symptoms. Please try describing them differently or seek professional medical advice.");
       }
     } catch (error) {
-      console.error("Error in symptom analysis:", error);
-      toast.error(`An error occurred: ${error.message || "Unknown error"}`);
+      // Check if this is an abort error (user cancelled)
+      if (error.name === 'AbortError') {
+        console.log("Request was cancelled by the user");
+        toast.info("Analysis cancelled");
+      } else {
+        console.error("Error in symptom analysis:", error);
+        toast.error(`An error occurred: ${error.message || "Unknown error"}`);
+      }
     } finally {
       setIsLoading(false);
+      setAbortController(null);
+    }
+  };
+
+  // Handle cancellation of the request
+  const handleCancel = () => {
+    if (abortController) {
+      abortController.abort();
+      setAbortController(null);
+      setIsLoading(false);
+      toast.info("Analysis cancelled");
     }
   };
 
@@ -150,6 +178,7 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
           className="min-h-[120px]"
           value={symptoms}
           onChange={(e) => setSymptoms(e.target.value)}
+          disabled={isLoading}
         />
         <div className="mt-4">
           <p className="text-sm text-muted-foreground mb-2">Common conditions:</p>
@@ -160,6 +189,7 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
                 variant="outline" 
                 size="sm"
                 onClick={() => handleQuickSelect(condition)}
+                disabled={isLoading}
               >
                 {condition}
               </Button>
@@ -167,14 +197,33 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
           </div>
         </div>
       </CardContent>
-      <CardFooter>
-        <Button 
-          onClick={handleSubmit} 
-          className="w-full" 
-          disabled={isLoading}
-        >
-          {isLoading ? "Analyzing..." : "Get First Aid Guidance"}
-        </Button>
+      <CardFooter className="flex gap-2">
+        {isLoading ? (
+          <>
+            <Button 
+              variant="destructive" 
+              onClick={handleCancel} 
+              className="flex-1"
+            >
+              <X className="mr-2 h-4 w-4" />
+              Cancel Analysis
+            </Button>
+            <Button 
+              className="flex-1" 
+              disabled={true}
+            >
+              Analyzing...
+            </Button>
+          </>
+        ) : (
+          <Button 
+            onClick={handleSubmit} 
+            className="w-full" 
+            disabled={isLoading}
+          >
+            Get First Aid Guidance
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );

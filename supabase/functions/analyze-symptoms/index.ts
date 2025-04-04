@@ -50,6 +50,7 @@ Format your response with clear structure:
 3. Use bold text (**text**) for important points or section headings
 4. Separate paragraphs with blank lines
 5. Ensure proper sequential numbering of list items (1, 2, 3, etc.) - don't repeat numbers
+6. Don't use asterisks (*) for anything other than bold text formatting (**text**)
 
 Always prioritize safety and be concise but thorough. Begin your response with "First Aid Guides:"`
       },
