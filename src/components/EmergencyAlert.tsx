@@ -54,8 +54,8 @@ const EmergencyAlert: React.FC<EmergencyAlertProps> = ({
               </ol>
             );
           }
-          // Check if this is a bullet list item paragraph
-          else if (paragraph.includes('• ')) {
+          // Check if this is a bullet list item paragraph (with either • or - as bullet markers)
+          else if (paragraph.includes('• ') || paragraph.includes('- ')) {
             // Split by line breaks to process each list item
             const listItems = paragraph.split('\n')
               .filter(item => item.trim().length > 0)
@@ -66,7 +66,8 @@ const EmergencyAlert: React.FC<EmergencyAlertProps> = ({
             return (
               <ul key={i} className="list-disc pl-5 space-y-2 my-3">
                 {listItems.map((item, j) => {
-                  const cleanedItem = item.replace(/^•\s*/, '');
+                  // Clean both bullet formats (• and -)
+                  const cleanedItem = item.replace(/^[•-]\s*/, '');
                   return <li key={j} dangerouslySetInnerHTML={{ __html: cleanedItem }} />;
                 })}
               </ul>
