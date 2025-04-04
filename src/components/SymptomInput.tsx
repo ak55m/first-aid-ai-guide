@@ -57,9 +57,15 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
         }
       });
       
-      // If the component was unmounted or analysis was cancelled, don't proceed
-      if (!isMounted.current || !isAnalyzing) {
-        console.log("Analysis was cancelled or component unmounted");
+      // If the component was unmounted, don't proceed
+      if (!isMounted.current) {
+        console.log("Component unmounted, cancelling analysis");
+        return;
+      }
+      
+      // Check if analysis was cancelled by the user
+      if (!isAnalyzing) {
+        console.log("Analysis was cancelled by user");
         return;
       }
       
@@ -69,24 +75,18 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
       if (error) {
         console.error("Error calling analyze-symptoms:", error);
         toast.error(`Error analyzing symptoms: ${error.message || "Unknown error"}`);
-        setIsLoading(false);
-        setIsAnalyzing(false);
         return;
       }
       
       if (!data) {
         console.error("No data returned from analyze-symptoms");
         toast.error("No response received from AI service");
-        setIsLoading(false);
-        setIsAnalyzing(false);
         return;
       }
       
       if (data.error) {
         console.error("API error:", data.error);
         toast.error(`AI service error: ${data.error}`);
-        setIsLoading(false);
-        setIsAnalyzing(false);
         return;
       }
       
@@ -99,8 +99,6 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
           symptoms,
           formattedAnalysis
         );
-        setIsLoading(false);
-        setIsAnalyzing(false);
         return;
       }
 
