@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertTriangle, Phone, ArrowLeft, Clock, Hospital } from 'lucide-react';
@@ -22,9 +21,14 @@ const EmergencyAlert: React.FC<EmergencyAlertProps> = ({
     // Replace markdown-style bold formatting (**text**) with span elements
     const formattedText = text.replace(/\*\*(.*?)\*\*/g, '<span class="font-bold">$1</span>');
     
-    // Process numbered lists (e.g., "1." or "1)" at the start of a line)
-    let processedText = formattedText.replace(/(\d+[\.\)]) (.*?)(?=\n\d+[\.\)]|\n\n|$)/g, 
-      '<li class="numbered-item"><span class="step-number">$1</span> $2</li>');
+    // Process numbered lists, ensuring correct sequential numbering
+    let processedText = formattedText.replace(/(\d+\.\s*)(.*?)(?=\n\d+\.|\n\n|$)/g, 
+      '<li class="numbered-item"><span class="step-number">$1</span>$2</li>');
+    
+    // Handle bullet points - remove standalone asterisks that aren't part of bold formatting
+    // Only keep asterisks that are used for bullet points at the start of lines
+    processedText = processedText.replace(/^\s*\*\s+(?!$)/gm, '• ');
+    processedText = processedText.replace(/\n\s*\*\s+(?!$)/g, '\n• ');
     
     // Split by paragraphs (double newlines)
     const paragraphs = processedText.split('\n\n');
@@ -41,14 +45,14 @@ const EmergencyAlert: React.FC<EmergencyAlertProps> = ({
             );
           }
           // Check if this is a bullet list item paragraph
-          else if (paragraph.trim().startsWith('*') || paragraph.trim().startsWith('-')) {
+          else if (paragraph.includes('• ')) {
             // Split by line breaks to process each list item
             const listItems = paragraph.split('\n').map(item => item.trim());
             return (
               <ul key={i} className="list-disc pl-5 space-y-2 my-3">
                 {listItems.map((item, j) => (
                   <li key={j} dangerouslySetInnerHTML={{ 
-                    __html: item.replace(/^\*\s?|-\s?/, '') // Remove the * or - prefix
+                    __html: item.replace(/^•\s?/, '') // Remove the • prefix for rendering
                   }} />
                 ))}
               </ul>
@@ -75,7 +79,7 @@ const EmergencyAlert: React.FC<EmergencyAlertProps> = ({
       <CardContent className="pt-6 space-y-6">
         <div className="p-4 bg-emergency/10 rounded-lg text-center">
           <p className="font-medium text-emergency mb-2">Your described symptoms:</p>
-          <p className="italic">"<span className="font-medium">{symptoms}</span>"</p>
+          <p className="italic text-center">"<span className="font-medium">{symptoms}</span>"</p>
         </div>
         
         <div>

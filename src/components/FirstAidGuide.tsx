@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { AlertCircle, ArrowLeft, Award, CheckCircle, Clock, Bandage, Syringe } from 'lucide-react';
@@ -18,9 +17,15 @@ const FirstAidGuide: React.FC<FirstAidGuideProps> = ({ guidance, onBack }) => {
     // Replace markdown-style bold formatting (**text**) with span elements
     const formattedText = text.replace(/\*\*(.*?)\*\*/g, '<span class="font-bold">$1</span>');
     
-    // Process numbered lists (e.g., "1." or "1)" at the start of a line)
-    let processedText = formattedText.replace(/(\d+[\.\)]) (.*?)(?=\n\d+[\.\)]|\n\n|$)/g, 
-      '<li class="numbered-item"><span class="step-number">$1</span> $2</li>');
+    // Process numbered lists - look for patterns like "1. Text" at start of line
+    // and ensure proper formatting with distinct numbered items
+    let processedText = formattedText.replace(/(\d+\.\s*)(.*?)(?=\n\d+\.|\n\n|$)/g, 
+      '<li class="numbered-item"><span class="step-number">$1</span>$2</li>');
+    
+    // Handle bullet points - remove standalone asterisks that aren't part of bold formatting
+    // Only keep asterisks that are used for bullet points at the start of lines
+    processedText = processedText.replace(/^\s*\*\s+(?!$)/gm, '• ');
+    processedText = processedText.replace(/\n\s*\*\s+(?!$)/g, '\n• ');
     
     // Split by paragraphs (double newlines)
     const paragraphs = processedText.split('\n\n');
@@ -37,14 +42,14 @@ const FirstAidGuide: React.FC<FirstAidGuideProps> = ({ guidance, onBack }) => {
             );
           }
           // Check if this is a bullet list item paragraph
-          else if (paragraph.trim().startsWith('*') || paragraph.trim().startsWith('-')) {
+          else if (paragraph.includes('• ')) {
             // Split by line breaks to process each list item
             const listItems = paragraph.split('\n').map(item => item.trim());
             return (
               <ul key={i} className="list-disc pl-5 space-y-2 my-3">
                 {listItems.map((item, j) => (
                   <li key={j} dangerouslySetInnerHTML={{ 
-                    __html: item.replace(/^\*\s?|-\s?/, '') // Remove the * or - prefix
+                    __html: item.replace(/^•\s?/, '') // Remove the • prefix for rendering
                   }} />
                 ))}
               </ul>
