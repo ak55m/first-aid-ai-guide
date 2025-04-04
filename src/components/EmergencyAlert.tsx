@@ -19,6 +19,8 @@ const EmergencyAlert: React.FC<EmergencyAlertProps> = ({
   const formatAIText = (text: string | undefined) => {
     if (!text) return null;
     
+    console.log("Emergency Alert - Formatting text:", text);
+    
     // Replace markdown-style bold formatting (**text**) with span elements
     const formattedText = text.replace(/\*\*(.*?)\*\*/g, '<span class="font-bold">$1</span>');
     
@@ -28,12 +30,16 @@ const EmergencyAlert: React.FC<EmergencyAlertProps> = ({
     return (
       <div className="prose prose-sm max-w-none">
         {paragraphs.map((paragraph, i) => {
+          console.log(`Emergency Alert - Processing paragraph ${i}:`, paragraph);
+          
           // Check if this is a numbered list paragraph
           if (/^\d+\.\s/.test(paragraph.trim())) {
             // Split by line breaks to get individual list items
             const listItems = paragraph.split('\n')
               .filter(item => item.trim().length > 0)
               .map(item => item.trim());
+            
+            console.log("Emergency Alert - Found numbered list:", listItems);
             
             // Create a proper numbered list
             return (
@@ -54,6 +60,8 @@ const EmergencyAlert: React.FC<EmergencyAlertProps> = ({
             const listItems = paragraph.split('\n')
               .filter(item => item.trim().length > 0)
               .map(item => item.trim());
+              
+            console.log("Emergency Alert - Found bullet list:", listItems);
               
             return (
               <ul key={i} className="list-disc pl-5 space-y-2 my-3">

@@ -11,12 +11,17 @@ interface FirstAidGuideProps {
 }
 
 const FirstAidGuide: React.FC<FirstAidGuideProps> = ({ guidance, onBack }) => {
-  // Function to format AI analysis text by replacing markdown-style elements
+  // Function to format AI analysis text
   const formatAIText = (text: string | undefined) => {
     if (!text) return null;
     
+    console.log("Formatting AI text:", text);
+    
+    // Remove standalone asterisks used for bullet points
+    let formattedText = text.replace(/\*\s*/g, '• ');
+    
     // Replace markdown-style bold formatting (**text**) with span elements
-    const formattedText = text.replace(/\*\*(.*?)\*\*/g, '<span class="font-bold">$1</span>');
+    formattedText = formattedText.replace(/\*\*(.*?)\*\*/g, '<span class="font-bold">$1</span>');
     
     // Split the text by paragraphs
     const paragraphs = formattedText.split('\n\n');
@@ -24,12 +29,16 @@ const FirstAidGuide: React.FC<FirstAidGuideProps> = ({ guidance, onBack }) => {
     return (
       <div className="prose prose-sm max-w-none">
         {paragraphs.map((paragraph, i) => {
+          console.log(`Processing paragraph ${i}:`, paragraph);
+          
           // Check if this is a numbered list paragraph
           if (/^\d+\.\s/.test(paragraph.trim())) {
             // Split by line breaks to get individual list items
             const listItems = paragraph.split('\n')
               .filter(item => item.trim().length > 0)
               .map(item => item.trim());
+            
+            console.log("Found numbered list:", listItems);
             
             // Create a proper numbered list
             return (
@@ -50,6 +59,8 @@ const FirstAidGuide: React.FC<FirstAidGuideProps> = ({ guidance, onBack }) => {
             const listItems = paragraph.split('\n')
               .filter(item => item.trim().length > 0)
               .map(item => item.trim());
+            
+            console.log("Found bullet list:", listItems);
               
             return (
               <ul key={i} className="list-disc pl-5 space-y-2 my-3">
