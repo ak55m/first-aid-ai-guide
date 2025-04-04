@@ -21,12 +21,9 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
   const [symptoms, setSymptoms] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [image, setImage] = useState<string | null>(null);
-  // Track the analysis state to allow cancellation
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  // We'll use a ref to track if the component is mounted
   const isMounted = React.useRef(true);
 
-  // Clean up when component unmounts
   React.useEffect(() => {
     return () => {
       isMounted.current = false;
@@ -52,10 +49,13 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
         body: { 
           symptoms: enhancedQuery,
           image: image,
-          // We'll add a requestId that we can use to identify this request
           requestId: Date.now().toString()
         }
       });
+      
+      // Debug logs to see what we're getting back
+      console.log("Edge function response:", data);
+      console.log("Edge function error:", error);
       
       // If the component was unmounted, don't proceed
       if (!isMounted.current) {
@@ -68,9 +68,6 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
         console.log("Analysis was cancelled by user");
         return;
       }
-      
-      console.log("Edge function response:", data);
-      console.log("Edge function error:", error);
       
       if (error) {
         console.error("Error calling analyze-symptoms:", error);
@@ -95,6 +92,7 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
       
       // Handle emergency case
       if (data.isEmergency) {
+        console.log("Emergency detected, showing emergency screen");
         onEmergencyDetected(
           symptoms,
           formattedAnalysis
@@ -130,12 +128,15 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
         }
       }
       
+      console.log("Found guidance:", foundGuidance);
+      
       if (foundGuidance) {
         // Add AI analysis to the guidance
         const enhancedGuidance = {
           ...foundGuidance,
           aiAnalysis: formattedAnalysis
         };
+        console.log("Calling onGuidanceFound with:", enhancedGuidance);
         onGuidanceFound(enhancedGuidance);
       } else {
         toast.error("I couldn't find specific guidance for these symptoms. Please try describing them differently or seek professional medical advice.");
