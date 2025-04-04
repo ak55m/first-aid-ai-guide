@@ -142,7 +142,7 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
       } else {
         toast.error("I couldn't find specific guidance for these symptoms. Please try describing them differently or seek professional medical advice.");
       }
-    } catch (error) {
+    } catch (error: any) {
       // Only show error if we're still analyzing (not cancelled)
       if (isAnalyzing) {
         console.error("Error in symptom analysis:", error);
