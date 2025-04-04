@@ -15,99 +15,34 @@ const EmergencyAlert: React.FC<EmergencyAlertProps> = ({
   reason, 
   onBack 
 }) => {
-  // Function to format AI text by replacing markdown-style elements
+  // Function to format AI text by simply preserving the line breaks
   const formatAIText = (text: string | undefined) => {
     if (!text) return null;
     
     console.log("Emergency Alert - Formatting text:", text);
     
-    // Replace markdown-style bold formatting (**text**) with span elements
-    const formattedText = text.replace(/\*\*(.*?)\*\*/g, '<span class="font-bold">$1</span>');
-    
-    // Split the text by paragraphs
-    const paragraphs = formattedText.split('\n\n');
+    // Split the text by line breaks
+    const lines = text.split('\n');
     
     return (
       <div className="prose prose-sm max-w-none">
-        {paragraphs.map((paragraph, i) => {
-          console.log(`Emergency Alert - Processing paragraph ${i}:`, paragraph);
+        {lines.map((line, i) => {
+          // Check if the line is empty (just a line break)
+          if (line.trim() === '') {
+            return <br key={`br-${i}`} />;
+          }
           
-          // Check if this is a numbered list paragraph
-          if (/^\d+\.\s/.test(paragraph.trim())) {
-            // Split by line breaks to get individual list items
-            const listItems = paragraph.split('\n')
-              .filter(item => item.trim().length > 0)
-              .map(item => item.trim());
-            
-            console.log("Emergency Alert - Found numbered list:", listItems);
-            
-            // Create a proper numbered list
+          // Check if line starts with a hyphen
+          if (line.trim().startsWith('-')) {
             return (
-              <ol key={i} className="list-decimal pl-5 space-y-2 my-3">
-                {listItems.map((item, j) => {
-                  // Strip out the number prefix (e.g., "1. ")
-                  const cleanedItem = item.replace(/^\d+\.\s*/, '');
-                  return (
-                    <li key={j} dangerouslySetInnerHTML={{ __html: cleanedItem }} />
-                  );
-                })}
-              </ol>
+              <div key={`hyphen-${i}`} className="ml-4">
+                {line}
+              </div>
             );
           }
-          // Check if paragraph contains hyphen list items
-          else if (paragraph.includes('\n-')) {
-            // Split by line breaks and process each item
-            const items = paragraph.split('\n')
-              .filter(item => item.trim().length > 0);
-            
-            // Check if the paragraph is a mix of text and list items or just list items
-            if (items[0].startsWith('-')) {
-              // All items are list items
-              return (
-                <ul key={i} className="list-disc pl-5 space-y-2 my-3">
-                  {items.map((item, j) => {
-                    // Clean the hyphen
-                    const cleanedItem = item.replace(/^-\s*/, '');
-                    return <li key={j} dangerouslySetInnerHTML={{ __html: cleanedItem }} />;
-                  })}
-                </ul>
-              );
-            } else {
-              // Mix of text and list items
-              // First item is descriptive text, rest are list items
-              return (
-                <div key={i} className="my-3">
-                  <p dangerouslySetInnerHTML={{ __html: items[0] }} className="mb-2" />
-                  <ul className="list-disc pl-5 space-y-1">
-                    {items.slice(1).map((item, j) => {
-                      const cleanedItem = item.replace(/^-\s*/, '');
-                      return <li key={j} dangerouslySetInnerHTML={{ __html: cleanedItem }} />;
-                    })}
-                  </ul>
-                </div>
-              );
-            }
-          }
-          // Handle standalone hyphen items that don't include newlines
-          else if (paragraph.trim().startsWith('-')) {
-            // Individual hyphen items without newlines
-            const items = paragraph.split('\n')
-              .filter(item => item.trim().length > 0);
-            
-            return (
-              <ul key={i} className="list-disc pl-5 space-y-2 my-3">
-                {items.map((item, j) => {
-                  const cleanedItem = item.replace(/^-\s*/, '');
-                  return <li key={j} dangerouslySetInnerHTML={{ __html: cleanedItem }} />;
-                })}
-              </ul>
-            );
-          } else {
-            // Regular paragraph
-            return (
-              <p key={i} className="mb-3" dangerouslySetInnerHTML={{ __html: paragraph }} />
-            );
-          }
+          
+          // Regular line of text
+          return <div key={`line-${i}`}>{line}</div>;
         })}
       </div>
     );
@@ -128,7 +63,6 @@ const EmergencyAlert: React.FC<EmergencyAlertProps> = ({
         </div>
         
         <div>
-          <h3 className="text-lg font-medium mb-2">First Aid Guides:</h3>
           {formatAIText(reason)}
         </div>
         
