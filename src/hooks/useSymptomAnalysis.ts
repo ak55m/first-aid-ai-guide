@@ -44,6 +44,7 @@ export function useSymptomAnalysis({
     // Cancel any in-progress requests
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
+      abortControllerRef.current = null;
     }
     
     // Create new abort controller for this request
@@ -63,9 +64,7 @@ export function useSymptomAnalysis({
           symptoms: enhancedQuery,
           image: image,
           requestId: Date.now().toString()
-        },
-        // We can't use abortController with Supabase functions directly,
-        // but we can check isAnalyzing before processing the result
+        }
       });
       
       // Debug logs to see what we're getting back
@@ -114,7 +113,6 @@ export function useSymptomAnalysis({
     } finally {
       if (isMounted.current) {
         setIsLoading(false);
-        setIsAnalyzing(false);
       }
     }
   };
