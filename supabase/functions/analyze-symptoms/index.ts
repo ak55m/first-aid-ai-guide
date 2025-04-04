@@ -47,7 +47,7 @@ serve(async (req) => {
 Format your response with this specific structure:
 1. DO NOT begin with "First Aid Guides:" - start directly with your analysis
 2. For step-by-step instructions, use numbered lists (1. 2. 3.)
-3. For symptoms, considerations, or item lists, use hyphens on new lines (-)
+3. For symptoms, considerations, or item lists, put each item on a new line with a hyphen (-)
 4. Use bold text (**text**) for important section headings
 5. Separate paragraphs with blank lines
 
