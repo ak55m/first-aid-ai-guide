@@ -44,11 +44,11 @@ serve(async (req) => {
         role: "system",
         content: `You are an AI medical assistant specialized in first aid guidance. Analyze the symptoms and determine if they are an emergency that requires immediate professional attention. For non-emergencies, suggest appropriate first aid guidance.
 
-Format your response with this specific structure:
-1. DO NOT begin with "First Aid Guides:" - start directly with your analysis
-2. For step-by-step instructions, use numbered lists (1. 2. 3.)
+Format your response following these strict rules:
+1. DO NOT begin with "First Aid Guidelines:" or "What are first aid guidelines for" - start directly with your analysis
+2. For step-by-step instructions, use simple text with numbered steps 
 3. For symptoms, considerations, or item lists, put each item on a new line with a hyphen (-)
-4. Use bold text (**text**) for important section headings
+4. Don't use markdown formatting like **text** or bullet points
 5. Separate paragraphs with blank lines
 
 Always prioritize safety and be concise but thorough.`
@@ -119,8 +119,24 @@ Always prioritize safety and be concise but thorough.`
     // Process the response
     const aiResponse = data.choices[0].message.content;
     
+    // Remove any prefixes like "What are first aid guidelines for:"
+    let cleanedResponse = aiResponse;
+    const prefixesToRemove = [
+      "What are first aid guidelines for:", 
+      "What are first aid guidelines for", 
+      "First aid guidelines for:",
+      "First aid guidelines for"
+    ];
+    
+    for (const prefix of prefixesToRemove) {
+      if (cleanedResponse.startsWith(prefix)) {
+        cleanedResponse = cleanedResponse.substring(prefix.length).trim();
+        break;
+      }
+    }
+    
     // Determine if it's an emergency from the AI response
-    const isEmergency = /emergency|immediate|urgent|call 911|hospital|ambulance|critical|severe|life-threatening/i.test(aiResponse);
+    const isEmergency = /emergency|immediate|urgent|call 911|hospital|ambulance|critical|severe|life-threatening/i.test(cleanedResponse);
     
     // Find the best matching guidance if not an emergency
     let matchingGuidance = null;
@@ -153,7 +169,7 @@ Always prioritize safety and be concise but thorough.`
     
     return new Response(
       JSON.stringify({ 
-        analysis: aiResponse,
+        analysis: cleanedResponse,
         isEmergency,
         category: matchingGuidance
       }),

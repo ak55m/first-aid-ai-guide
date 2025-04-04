@@ -11,14 +11,29 @@ interface FirstAidGuideProps {
 }
 
 const FirstAidGuide: React.FC<FirstAidGuideProps> = ({ guidance, onBack }) => {
-  // Function to format AI text by simply preserving the line breaks
+  // Function to format AI text by removing prefixes and preserving the line breaks
   const formatAIText = (text: string | undefined) => {
     if (!text) return null;
     
     console.log("Formatting AI text:", text);
     
+    // Remove "What are first aid guidelines for:" or similar prefixes
+    let cleanedText = text;
+    const prefixesToRemove = [
+      "What are first aid guidelines for:", 
+      "What are first aid guidelines for", 
+      "First aid guidelines for:",
+      "First aid guidelines for"
+    ];
+    
+    prefixesToRemove.forEach(prefix => {
+      if (cleanedText.startsWith(prefix)) {
+        cleanedText = cleanedText.substring(prefix.length).trim();
+      }
+    });
+    
     // Split the text by line breaks
-    const lines = text.split('\n');
+    const lines = cleanedText.split('\n');
     
     return (
       <div className="prose prose-sm max-w-none">
@@ -28,7 +43,7 @@ const FirstAidGuide: React.FC<FirstAidGuideProps> = ({ guidance, onBack }) => {
             return <br key={`br-${i}`} />;
           }
           
-          // Check if line starts with a hyphen
+          // Check if line starts with a hyphen - apply indentation
           if (line.trim().startsWith('-')) {
             return (
               <div key={`hyphen-${i}`} className="ml-4">
