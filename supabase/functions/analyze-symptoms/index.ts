@@ -42,14 +42,22 @@ serve(async (req) => {
     const messages = [
       {
         role: "system",
-        content: "You are an AI medical assistant specialized in first aid guidance. Analyze the symptoms and determine if they are an emergency that requires immediate professional attention. For non-emergencies, suggest appropriate first aid guidance. Be concise and clear. Always prioritize safety."
+        content: `You are an AI medical assistant specialized in first aid guidance. Analyze the symptoms and determine if they are an emergency that requires immediate professional attention. For non-emergencies, suggest appropriate first aid guidance. 
+
+Format your response with clear structure:
+1. Use numbered lists (1. 2. 3.) for step-by-step instructions, with each step clearly separate from the others
+2. Use bullet points (*) for lists of symptoms or considerations
+3. Use bold text (**text**) for important points or section headings
+4. Separate paragraphs with blank lines
+
+Always prioritize safety and be concise but thorough.`
       },
       {
         role: "user",
         content: [
           {
             type: "text",
-            text: `Analyze these symptoms: ${symptoms}`
+            text: `${symptoms}`
           }
         ]
       }

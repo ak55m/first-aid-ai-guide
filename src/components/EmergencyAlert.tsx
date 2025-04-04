@@ -22,18 +22,30 @@ const EmergencyAlert: React.FC<EmergencyAlertProps> = ({
     // Replace markdown-style bold formatting (**text**) with span elements
     const formattedText = text.replace(/\*\*(.*?)\*\*/g, '<span class="font-bold">$1</span>');
     
+    // Process numbered lists (e.g., "1." or "1)" at the start of a line)
+    let processedText = formattedText.replace(/(\d+[\.\)]) (.*?)(?=\n\d+[\.\)]|\n\n|$)/g, 
+      '<li class="numbered-item"><span class="step-number">$1</span> $2</li>');
+    
     // Split by paragraphs (double newlines)
-    const paragraphs = formattedText.split('\n\n');
+    const paragraphs = processedText.split('\n\n');
     
     return (
       <div className="prose prose-sm max-w-none">
         {paragraphs.map((paragraph, i) => {
-          // Check if this is a list item paragraph
-          if (paragraph.trim().startsWith('*') || paragraph.trim().startsWith('-')) {
+          // Check if this paragraph contains numbered list items
+          if (paragraph.includes('<li class="numbered-item">')) {
+            return (
+              <ol key={i} className="list-decimal pl-5 space-y-2 my-3">
+                <div dangerouslySetInnerHTML={{ __html: paragraph }} />
+              </ol>
+            );
+          }
+          // Check if this is a bullet list item paragraph
+          else if (paragraph.trim().startsWith('*') || paragraph.trim().startsWith('-')) {
             // Split by line breaks to process each list item
             const listItems = paragraph.split('\n').map(item => item.trim());
             return (
-              <ul key={i} className="list-disc pl-5 space-y-1 my-3">
+              <ul key={i} className="list-disc pl-5 space-y-2 my-3">
                 {listItems.map((item, j) => (
                   <li key={j} dangerouslySetInnerHTML={{ 
                     __html: item.replace(/^\*\s?|-\s?/, '') // Remove the * or - prefix
@@ -61,9 +73,9 @@ const EmergencyAlert: React.FC<EmergencyAlertProps> = ({
         </div>
       </CardHeader>
       <CardContent className="pt-6 space-y-6">
-        <div className="p-4 bg-emergency/10 rounded-lg">
+        <div className="p-4 bg-emergency/10 rounded-lg text-center">
           <p className="font-medium text-emergency mb-2">Your described symptoms:</p>
-          <p className="italic">"{symptoms}"</p>
+          <p className="italic">"<span className="font-medium">{symptoms}</span>"</p>
         </div>
         
         <div>

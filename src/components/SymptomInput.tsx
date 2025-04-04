@@ -30,12 +30,14 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
     setIsLoading(true);
     
     try {
-      console.log("Calling analyze-symptoms with:", symptoms);
+      // Enhance user query with first aid context
+      const enhancedQuery = `What are first aid guidelines for: ${symptoms.trim()}`;
+      console.log("Calling analyze-symptoms with enhanced query:", enhancedQuery);
       
       // Call our Supabase Edge Function to analyze symptoms
       const { data, error } = await supabase.functions.invoke('analyze-symptoms', {
         body: { 
-          symptoms: symptoms.trim(),
+          symptoms: enhancedQuery,
           image: image
         }
       });
