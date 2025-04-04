@@ -39,6 +39,10 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
     setTimeout(() => analyzeSymptoms(condition, image), 300);
   };
 
+  const handleCancelAnalysis = () => {
+    cancelAnalysis();
+  };
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -60,22 +64,22 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
           disabled={isLoading}
         />
       </CardContent>
-      <CardFooter className="flex gap-2">
+      <CardFooter className="flex gap-2 justify-between">
         {isLoading ? (
           <>
-            <Button 
-              variant="destructive" 
-              onClick={cancelAnalysis} 
-              className="flex-1"
-            >
-              <X className="mr-2 h-4 w-4" />
-              Cancel Analysis
-            </Button>
             <Button 
               className="flex-1" 
               disabled={true}
             >
               Analyzing...
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleCancelAnalysis} 
+              className="flex items-center"
+            >
+              <X className="mr-2 h-4 w-4" />
+              Cancel Analysis
             </Button>
           </>
         ) : (
