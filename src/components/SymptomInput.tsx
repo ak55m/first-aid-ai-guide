@@ -21,8 +21,17 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
   const [symptoms, setSymptoms] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [image, setImage] = useState<string | null>(null);
-  // Add a controller for aborting fetch requests
-  const [abortController, setAbortController] = useState<AbortController | null>(null);
+  // Track the analysis state to allow cancellation
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  // We'll use a ref to track if the component is mounted
+  const isMounted = React.useRef(true);
+
+  // Clean up when component unmounts
+  React.useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   const handleSubmit = async () => {
     if (!symptoms.trim()) {
@@ -31,12 +40,9 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
     }
 
     setIsLoading(true);
+    setIsAnalyzing(true);
     
     try {
-      // Create a new AbortController for this request
-      const controller = new AbortController();
-      setAbortController(controller);
-      
       // Enhance user query with first aid context
       const enhancedQuery = `What are first aid guidelines for: ${symptoms.trim()}`;
       console.log("Calling analyze-symptoms with enhanced query:", enhancedQuery);
@@ -45,13 +51,17 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
       const { data, error } = await supabase.functions.invoke('analyze-symptoms', {
         body: { 
           symptoms: enhancedQuery,
-          image: image
-        },
-        signal: controller.signal
+          image: image,
+          // We'll add a requestId that we can use to identify this request
+          requestId: Date.now().toString()
+        }
       });
       
-      // Clear the controller when done
-      setAbortController(null);
+      // If the component was unmounted or analysis was cancelled, don't proceed
+      if (!isMounted.current || !isAnalyzing) {
+        console.log("Analysis was cancelled or component unmounted");
+        return;
+      }
       
       console.log("Edge function response:", data);
       console.log("Edge function error:", error);
@@ -60,6 +70,7 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
         console.error("Error calling analyze-symptoms:", error);
         toast.error(`Error analyzing symptoms: ${error.message || "Unknown error"}`);
         setIsLoading(false);
+        setIsAnalyzing(false);
         return;
       }
       
@@ -67,6 +78,7 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
         console.error("No data returned from analyze-symptoms");
         toast.error("No response received from AI service");
         setIsLoading(false);
+        setIsAnalyzing(false);
         return;
       }
       
@@ -74,6 +86,7 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
         console.error("API error:", data.error);
         toast.error(`AI service error: ${data.error}`);
         setIsLoading(false);
+        setIsAnalyzing(false);
         return;
       }
       
@@ -87,6 +100,7 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
           formattedAnalysis
         );
         setIsLoading(false);
+        setIsAnalyzing(false);
         return;
       }
 
@@ -129,28 +143,26 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
         toast.error("I couldn't find specific guidance for these symptoms. Please try describing them differently or seek professional medical advice.");
       }
     } catch (error) {
-      // Check if this is an abort error (user cancelled)
-      if (error.name === 'AbortError') {
-        console.log("Request was cancelled by the user");
-        toast.info("Analysis cancelled");
-      } else {
+      // Only show error if we're still analyzing (not cancelled)
+      if (isAnalyzing) {
         console.error("Error in symptom analysis:", error);
         toast.error(`An error occurred: ${error.message || "Unknown error"}`);
+      } else {
+        console.log("Error occurred but analysis was already cancelled");
       }
     } finally {
-      setIsLoading(false);
-      setAbortController(null);
+      if (isMounted.current) {
+        setIsLoading(false);
+        setIsAnalyzing(false);
+      }
     }
   };
 
   // Handle cancellation of the request
   const handleCancel = () => {
-    if (abortController) {
-      abortController.abort();
-      setAbortController(null);
-      setIsLoading(false);
-      toast.info("Analysis cancelled");
-    }
+    setIsAnalyzing(false);
+    setIsLoading(false);
+    toast.info("Analysis cancelled");
   };
 
   const commonConditions = [
