@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertTriangle, Phone, ArrowLeft, Clock, Hospital } from 'lucide-react';
@@ -21,40 +22,45 @@ const EmergencyAlert: React.FC<EmergencyAlertProps> = ({
     // Replace markdown-style bold formatting (**text**) with span elements
     const formattedText = text.replace(/\*\*(.*?)\*\*/g, '<span class="font-bold">$1</span>');
     
-    // Process numbered lists, ensuring correct sequential numbering
-    let processedText = formattedText.replace(/(\d+\.\s*)(.*?)(?=\n\d+\.|\n\n|$)/g, 
-      '<li class="numbered-item"><span class="step-number">$1</span>$2</li>');
-    
-    // Handle bullet points - remove standalone asterisks that aren't part of bold formatting
-    // Only keep asterisks that are used for bullet points at the start of lines
-    processedText = processedText.replace(/^\s*\*\s+(?!$)/gm, '• ');
-    processedText = processedText.replace(/\n\s*\*\s+(?!$)/g, '\n• ');
-    
-    // Split by paragraphs (double newlines)
-    const paragraphs = processedText.split('\n\n');
+    // Split the text by paragraphs
+    const paragraphs = formattedText.split('\n\n');
     
     return (
       <div className="prose prose-sm max-w-none">
         {paragraphs.map((paragraph, i) => {
-          // Check if this paragraph contains numbered list items
-          if (paragraph.includes('<li class="numbered-item">')) {
+          // Check if this is a numbered list paragraph
+          if (/^\d+\.\s/.test(paragraph.trim())) {
+            // Split by line breaks to get individual list items
+            const listItems = paragraph.split('\n')
+              .filter(item => item.trim().length > 0)
+              .map(item => item.trim());
+            
+            // Create a proper numbered list
             return (
               <ol key={i} className="list-decimal pl-5 space-y-2 my-3">
-                <div dangerouslySetInnerHTML={{ __html: paragraph }} />
+                {listItems.map((item, j) => {
+                  // Strip out the number prefix (e.g., "1. ")
+                  const cleanedItem = item.replace(/^\d+\.\s*/, '');
+                  return (
+                    <li key={j} dangerouslySetInnerHTML={{ __html: cleanedItem }} />
+                  );
+                })}
               </ol>
             );
           }
           // Check if this is a bullet list item paragraph
           else if (paragraph.includes('• ')) {
             // Split by line breaks to process each list item
-            const listItems = paragraph.split('\n').map(item => item.trim());
+            const listItems = paragraph.split('\n')
+              .filter(item => item.trim().length > 0)
+              .map(item => item.trim());
+              
             return (
               <ul key={i} className="list-disc pl-5 space-y-2 my-3">
-                {listItems.map((item, j) => (
-                  <li key={j} dangerouslySetInnerHTML={{ 
-                    __html: item.replace(/^•\s?/, '') // Remove the • prefix for rendering
-                  }} />
-                ))}
+                {listItems.map((item, j) => {
+                  const cleanedItem = item.replace(/^•\s*/, '');
+                  return <li key={j} dangerouslySetInnerHTML={{ __html: cleanedItem }} />;
+                })}
               </ul>
             );
           } else {
@@ -78,7 +84,7 @@ const EmergencyAlert: React.FC<EmergencyAlertProps> = ({
       </CardHeader>
       <CardContent className="pt-6 space-y-6">
         <div className="p-4 bg-emergency/10 rounded-lg text-center">
-          <p className="font-medium text-emergency mb-2">Your described symptoms:</p>
+          <p className="font-medium text-emergency mb-2 text-center">Your described symptoms:</p>
           <p className="italic text-center">"<span className="font-medium">{symptoms}</span>"</p>
         </div>
         
