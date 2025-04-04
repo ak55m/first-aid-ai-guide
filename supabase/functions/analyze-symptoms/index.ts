@@ -56,29 +56,20 @@ Always prioritize safety and be concise but thorough. Begin your response with "
       },
       {
         role: "user",
-        content: [
-          {
-            type: "text",
-            text: `${symptoms}`
-          }
-        ]
+        content: symptoms
       }
     ];
 
     // Add image to messages if provided
     if (image) {
-      messages[1].content.push({
-        type: "image_url",
-        image_url: {
-          url: image
-        }
-      });
+      console.log("Image provided, but note that Qwen model might not support image input");
+      // Note: Qwen API may not support image input in the same way
     }
 
-    console.log("Calling OpenRouter API...");
+    console.log("Calling OpenRouter API with Qwen model...");
     
     const openRouterBody = {
-      model: "google/gemini-2.5-pro-exp-03-25:free",
+      model: "qwen/qwq-32b:free",
       messages: messages
     };
     
