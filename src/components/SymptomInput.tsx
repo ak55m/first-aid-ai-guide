@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,7 +30,6 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
     onEmergencyDetected
   });
 
-  // Reset submit button state when loading state changes
   useEffect(() => {
     setIsSubmitEnabled(!isLoading);
   }, [isLoading]);
@@ -44,7 +42,6 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
 
   const handleQuickSelect = (condition: string) => {
     setSymptoms(condition);
-    // Auto-submit after a brief delay
     setTimeout(() => {
       if (isSubmitEnabled) {
         analyzeSymptoms(condition, image);

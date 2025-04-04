@@ -1,19 +1,14 @@
 
 import { useState, useRef, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { firstAidDatabase } from '@/data/firstAidData';
-import { FirstAidGuidance } from '@/types/firstAidTypes';
 import { toast } from 'sonner';
+import { FirstAidGuidance } from '@/types/firstAidTypes';
+import { analyzeSymptomWithAI, AnalysisResult } from '@/api/symptomAnalysisApi';
+import { findMatchingGuidance, enhanceSymptomQuery } from '@/utils/firstAidUtils';
+import { isEmergencyCondition } from '@/utils/emergencyUtils';
 
 interface UseSymptomAnalysisProps {
   onGuidanceFound: (guidance: FirstAidGuidance) => void;
   onEmergencyDetected: (symptoms: string, reason: string) => void;
-}
-
-interface AnalysisResult {
-  analysis: string;
-  isEmergency: boolean;
-  category?: string;
 }
 
 export function useSymptomAnalysis({ 
@@ -55,21 +50,14 @@ export function useSymptomAnalysis({
     
     try {
       // Enhance user query with first aid context
-      const enhancedQuery = `What are first aid guidelines for: ${symptoms.trim()}`;
-      console.log("Calling analyze-symptoms with enhanced query:", enhancedQuery);
+      const enhancedQuery = enhanceSymptomQuery(symptoms);
       
-      // Call our Supabase Edge Function to analyze symptoms
-      const { data, error } = await supabase.functions.invoke('analyze-symptoms', {
-        body: { 
-          symptoms: enhancedQuery,
-          image: image,
-          requestId: Date.now().toString()
-        }
-      });
-      
-      // Debug logs to see what we're getting back
-      console.log("Edge function response:", data);
-      console.log("Edge function error:", error);
+      // Get analysis result from AI
+      const data = await analyzeSymptomWithAI(
+        enhancedQuery, 
+        image,
+        abortControllerRef.current?.signal
+      );
       
       // If the component was unmounted or analysis was cancelled, don't proceed
       if (!isMounted.current || !isAnalyzing) {
@@ -77,27 +65,14 @@ export function useSymptomAnalysis({
         return;
       }
       
-      if (error) {
-        console.error("Error calling analyze-symptoms:", error);
-        toast.error(`Error analyzing symptoms: ${error.message || "Unknown error"}`);
-        return;
-      }
-      
       if (!data) {
-        console.error("No data returned from analyze-symptoms");
-        toast.error("No response received from AI service");
-        return;
-      }
-      
-      if (data.error) {
-        console.error("API error:", data.error);
-        toast.error(`AI service error: ${data.error}`);
+        // Error already handled in analyzeSymptomWithAI
         return;
       }
       
       // Only process the result if we haven't cancelled the analysis
       if (isMounted.current && isAnalyzing) {
-        processAnalysisResult(symptoms, data as AnalysisResult);
+        processAnalysisResult(symptoms, data);
       } else {
         console.log("Analysis was cancelled before processing results");
       }
@@ -127,21 +102,10 @@ export function useSymptomAnalysis({
     // Format the AI analysis to have better structure if it's a block of text
     let formattedAnalysis = data.analysis;
     
-    // Fix: Don't rely solely on AI's isEmergency flag, do our own check for common emergency keywords
-    // This ensures more accurate emergency detection
-    const emergencyKeywords = [
-      "call 911", "emergency", "ambulance", "immediate", "hospital", "urgent care", 
-      "severe", "critical", "life-threatening"
-    ];
+    // Check if the text truly indicates an emergency situation
+    const isEmergency = isEmergencyCondition(data.isEmergency, formattedAnalysis);
     
-    // Check if the text truly indicates an emergency situation by looking for emergency keywords
-    const containsEmergencyKeywords = emergencyKeywords.some(keyword => 
-      formattedAnalysis.toLowerCase().includes(keyword.toLowerCase())
-    );
-    
-    // Only treat as emergency if AI flagged it AND we find emergency keywords
-    // This prevents non-emergency headaches from triggering the emergency screen
-    if (data.isEmergency && containsEmergencyKeywords) {
+    if (isEmergency) {
       console.log("Emergency detected, showing emergency screen");
       onEmergencyDetected(
         symptoms,
@@ -165,37 +129,6 @@ export function useSymptomAnalysis({
     } else {
       toast.error("I couldn't find specific guidance for these symptoms. Please try describing them differently or seek professional medical advice.");
     }
-  };
-
-  const findMatchingGuidance = (symptoms: string, category: string | undefined): FirstAidGuidance | null => {
-    let foundGuidance = null;
-    
-    // If AI suggested a category, try to find it in our database
-    if (category) {
-      for (const guide of firstAidDatabase) {
-        if (guide.keywords.includes(category)) {
-          foundGuidance = guide;
-          break;
-        }
-      }
-    }
-    
-    // If no guidance found from AI category, fall back to keyword search
-    if (!foundGuidance) {
-      const symptomsLower = symptoms.toLowerCase();
-      
-      for (const guide of firstAidDatabase) {
-        for (const keyword of guide.keywords) {
-          if (symptomsLower.includes(keyword.toLowerCase())) {
-            foundGuidance = guide;
-            break;
-          }
-        }
-        if (foundGuidance) break;
-      }
-    }
-    
-    return foundGuidance;
   };
 
   const cancelAnalysis = () => {
