@@ -40,6 +40,7 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
   };
 
   const handleCancelAnalysis = () => {
+    console.log("Cancel button clicked, calling cancelAnalysis");
     cancelAnalysis();
   };
 

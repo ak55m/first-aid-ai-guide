@@ -23,11 +23,15 @@ export function useSymptomAnalysis({
   const [isLoading, setIsLoading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const isMounted = useRef(true);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Clean up when component unmounts
   useEffect(() => {
     return () => {
       isMounted.current = false;
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
     };
   }, []);
 
@@ -37,6 +41,14 @@ export function useSymptomAnalysis({
       return;
     }
 
+    // Cancel any in-progress requests
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    // Create new abort controller for this request
+    abortControllerRef.current = new AbortController();
+    
     setIsLoading(true);
     setIsAnalyzing(true);
     
@@ -51,16 +63,18 @@ export function useSymptomAnalysis({
           symptoms: enhancedQuery,
           image: image,
           requestId: Date.now().toString()
-        }
+        },
+        // We can't use abortController with Supabase functions directly,
+        // but we can check isAnalyzing before processing the result
       });
       
       // Debug logs to see what we're getting back
       console.log("Edge function response:", data);
       console.log("Edge function error:", error);
       
-      // If the component was unmounted, don't proceed
-      if (!isMounted.current) {
-        console.log("Component unmounted, cancelling analysis");
+      // If the component was unmounted or analysis was cancelled, don't proceed
+      if (!isMounted.current || !isAnalyzing) {
+        console.log("Component unmounted or analysis cancelled, stopping processing");
         return;
       }
       
@@ -82,8 +96,13 @@ export function useSymptomAnalysis({
         return;
       }
       
-      // At this point, we have a successful response and we're still mounted and analyzing
-      processAnalysisResult(symptoms, data as AnalysisResult);
+      // Only process the result if we haven't cancelled the analysis
+      if (isAnalyzing && isMounted.current) {
+        // At this point, we have a successful response and we're still mounted and analyzing
+        processAnalysisResult(symptoms, data as AnalysisResult);
+      } else {
+        console.log("Analysis was cancelled before processing results");
+      }
     } catch (error: any) {
       // Only show error if we're still analyzing (not cancelled)
       if (isAnalyzing && isMounted.current) {
@@ -101,6 +120,12 @@ export function useSymptomAnalysis({
   };
 
   const processAnalysisResult = (symptoms: string, data: AnalysisResult) => {
+    // If analysis has been cancelled, don't process the result
+    if (!isAnalyzing || !isMounted.current) {
+      console.log("Analysis was cancelled, not processing results");
+      return;
+    }
+    
     // Format the AI analysis to have better structure if it's a block of text
     let formattedAnalysis = data.analysis;
     
@@ -163,9 +188,17 @@ export function useSymptomAnalysis({
   };
 
   const cancelAnalysis = () => {
+    console.log("Cancelling analysis");
     if (isAnalyzing) {
       setIsAnalyzing(false);
       setIsLoading(false);
+      
+      // Attempt to abort the request if possible
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+      
       toast.info("Analysis cancelled");
     }
   };
