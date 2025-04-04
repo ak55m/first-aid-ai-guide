@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { firstAidDatabase } from '@/data/firstAidData';
@@ -113,6 +112,7 @@ export function useSymptomAnalysis({
     } finally {
       if (isMounted.current) {
         setIsLoading(false);
+        setIsAnalyzing(false); // Important: Reset analyzing state when done
       }
     }
   };
